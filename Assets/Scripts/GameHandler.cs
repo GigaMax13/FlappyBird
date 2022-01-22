@@ -1,25 +1,54 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using CodeMonkey;
-using CodeMonkey.Utils;
 
 public class GameHandler : MonoBehaviour {
-  public bool debug = false;
+  private static GameHandler instance;
 
-  void Start() {
-    Debug.Log("GameHandler.Start");
+  public static GameHandler getInstance() {
+    return instance;
+  }
 
-    //GameObject gameObject = new GameObject("Pipe", typeof(SpriteRenderer));
-    //gameObject.GetComponent<SpriteRenderer>().sprite = GameAssets.GetInstance().pipeHeadSprite;
+  private bool isPaused = true;
+  private bool isOver = false;
 
-    if (debug) {
-      int count = 0;
+  private void Awake() {
+    instance = this;
+  }
 
-      FunctionPeriodic.Create(() => {
-        CMDebug.TextPopupMouse("Ding! " + count);
-        count++;
-      }, .300f);
+  private void Update() {
+    if (Input.GetKeyDown(KeyCode.Space) || Input.GetMouseButtonDown(0)) {
+      if (isGamePaused) {
+        // Start
+        if (!isGameOver) {
+          tooglePause();
+        }
+        // Restart
+        else {
+
+        }
+      }
+    }
+  }
+
+  public void gameOver() {
+    isPaused = true;
+    isOver = true;
+  }
+
+  public void tooglePause() {
+    if (!isGameOver) {
+      isPaused = !isPaused;
+    }
+  }
+
+  public bool isGameOver {
+    get {
+      return isOver;
+    }
+  }
+
+  public bool isGamePaused {
+    get {
+      return isPaused;
     }
   }
 }

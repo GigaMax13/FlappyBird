@@ -1,24 +1,33 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class LevelHandler : MonoBehaviour {
   private const float PIPE_DESTROY_X_POSITION = -100f;
+  private const float PIPE_SPAWN_X_POSITION = 100f;
+  private const int INCREASES_DIFFICULTY_EVERY = 5;
+  private const float PIPE_GAP_SIZE_DECREASES = 2.5f;
+  private const float MIN_PIPE_GAP_SIZE = 25f;
   private const float CAMERA_SIZE = 50f;
-  private const float SPEED = 10f;
+  private const float SPEED = 30f;
 
+  private float pipeSpawnTimerMax;
+  private float pipeSpawnTimer;
+  private int pipesSpawned;
   private List<Pipe> pipes;
+  private float pipeGapSize;
 
   private void Awake() {
     pipes = new List<Pipe>();
+    pipeSpawnTimerMax = 1.5f;
+    pipesSpawned = 0;
+    pipeGapSize = 50f;
   }
 
-  private void Start() {
-    CreateGapPipes(50f, 20f, 20f);
-  }
-
-  private void Update() {
-    HandlePipeMovement();
+  private void FixedUpdate() {
+    if (!GameHandler.getInstance().isGamePaused) {
+      HandlePipeMovement();
+      HandlePipeSpawning();
+    }
   }
 
   private void HandlePipeMovement() {
@@ -35,9 +44,43 @@ public class LevelHandler : MonoBehaviour {
     }
   }
 
+  private void HandlePipeSpawning() {
+    pipeSpawnTimer -= Time.deltaTime;
+
+    if (pipeSpawnTimer <= 0) {
+      pipeSpawnTimer = pipeSpawnTimerMax;
+
+      float totalHeight = CAMERA_SIZE * 2f;
+      float heightEdgeLimit = 5f;
+      float minHeight = pipeGapSize / 2f + heightEdgeLimit;
+      float maxHeight = totalHeight - pipeGapSize / 2f - heightEdgeLimit;
+      float height = UnityEngine.Random.Range(minHeight, maxHeight);
+
+      Debug.Log("Min: " + minHeight + " Max: " + maxHeight + " Height: " + height);
+
+      CreateGapPipes(height, pipeGapSize, PIPE_SPAWN_X_POSITION);
+      HandleDifficulty();
+    }
+  }
+
+  private void HandleDifficulty() {
+    if (pipesSpawned % INCREASES_DIFFICULTY_EVERY == 0 && pipeGapSize >= MIN_PIPE_GAP_SIZE + PIPE_GAP_SIZE_DECREASES) {
+      pipeGapSize -= PIPE_GAP_SIZE_DECREASES;
+
+      if (pipeSpawnTimerMax * .95f >= .8f) {
+        pipeSpawnTimerMax *= .95f;
+      } else {
+        pipeSpawnTimerMax = .8f;
+      }
+
+      Debug.Log("GapSize: " + pipeGapSize + " SpawnTimer: " + pipeSpawnTimerMax);
+    }
+  }
+
   private void CreateGapPipes(float gapY, float gapSize, float xPosition) {
     CreatePipe(CAMERA_SIZE * 2f - gapY - gapSize / 2f, xPosition, false);
     CreatePipe(gapY - gapSize / 2f, xPosition);
+    pipesSpawned++;
   }
 
   private void CreatePipe(float height, float xPosition, bool onGround = true) {

@@ -1,28 +1,44 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using CodeMonkey;
 
 public class Bird : MonoBehaviour {
-  private Rigidbody2D birdRigidbody2D;
+  private float gravityScale = 35;
+  private float jumpForce = 100;
+  private bool isJumpPressed;
 
-  private const float JUMP = 100f;
+  private Rigidbody2D rb2d;
 
   private void Awake() {
-    birdRigidbody2D = GetComponent<Rigidbody2D>();
+    rb2d = GetComponent<Rigidbody2D>();
   }
 
   private void Update() {
-    if (Input.GetKeyDown(KeyCode.Space) || Input.GetMouseButtonDown(0)) {
-      Jump();
+    if (GameHandler.getInstance().isGamePaused) {
+      rb2d.velocity = new Vector2();
+      rb2d.gravityScale = 0;
+    } else {
+      if (rb2d.gravityScale == 0) {
+        rb2d.gravityScale = gravityScale;
+      }
+
+      if (Input.GetKeyDown(KeyCode.Space) || Input.GetMouseButtonDown(0)) {
+        isJumpPressed = true;
+      }
     }
   }
 
-  private void Jump() {
-    birdRigidbody2D.velocity = Vector2.up * JUMP;
+  private void FixedUpdate() {
+    if (GameHandler.getInstance().isGamePaused) {
+      return;
+    }
+
+    if (isJumpPressed) {
+      isJumpPressed = false;
+      rb2d.velocity = Vector2.up * jumpForce;
+    }
   }
 
   private void OnTriggerEnter2D(Collider2D collider) {
-    CMDebug.TextPopupMouse("Dead!");
+    GameHandler.getInstance().gameOver();
+    // CMDebug.TextPopupMouse("Dead!");
   }
 }
