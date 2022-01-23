@@ -169,6 +169,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   pipeHead: {fileID: 625009719244141623, guid: a03b50b5a8af44204beb050cd0d76e45, type: 3}
   pipeBody: {fileID: 4444612979413981717, guid: 85faa04afa2764d7fbc9e919fff308d4, type: 3}
+  ground: {fileID: 8915497506849552092, guid: f0e67a8eb38a149cdafb28f49e97c7c7, type: 3}
 --- !u!1 &519420028
 GameObject:
   m_ObjectHideFlags: 0
@@ -266,7 +267,7 @@ GameObject:
   - component: {fileID: 587504241}
   - component: {fileID: 587504240}
   - component: {fileID: 587504239}
-  m_Layer: 13
+  m_Layer: 14
   m_Name: Bird
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -445,7 +446,7 @@ SpriteRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 923536643
-  m_SortingLayer: -3
+  m_SortingLayer: -4
   m_SortingOrder: 0
   m_Sprite: {fileID: 21300000, guid: e2516176ecb5f514f8ab93be186e7503, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}

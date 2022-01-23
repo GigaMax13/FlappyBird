@@ -3,7 +3,7 @@ using UnityEngine;
 public class GameAssets : MonoBehaviour {
   private static GameAssets instance;
 
-  public static GameAssets GetInstance() {
+  public static GameAssets getInstance() {
     return instance;
   }
 
@@ -13,4 +13,5 @@ public class GameAssets : MonoBehaviour {
 
   public Transform pipeHead;
   public Transform pipeBody;
+  public Transform ground;
 }

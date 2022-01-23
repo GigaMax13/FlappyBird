@@ -17,9 +17,9 @@ TagManager:
   - 
   - 
   - background
+  - ground
   - pipe
   - player
-  - 
   - 
   - 
   - 
@@ -43,6 +43,9 @@ TagManager:
     locked: 0
   - name: pipe
     uniqueID: 3370072721
+    locked: 0
+  - name: ground
+    uniqueID: 1326792709
     locked: 0
   - name: player
     uniqueID: 1346585659

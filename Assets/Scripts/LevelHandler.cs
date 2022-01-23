@@ -2,10 +2,14 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class LevelHandler : MonoBehaviour {
+  private const float GROUND_DESTROY_X_POSITION = -250f;
+  private const float GROUND_SPAWN_X_POSITION = 240f;
+
   private const float PIPE_DESTROY_X_POSITION = -100f;
-  private const float PIPE_SPAWN_X_POSITION = 100f;
-  private const int INCREASES_DIFFICULTY_EVERY = 5;
   private const float PIPE_GAP_SIZE_DECREASES = 2.5f;
+  private const float PIPE_SPAWN_X_POSITION = 100f;
+
+  private const int INCREASES_DIFFICULTY_EVERY = 5;
   private const float MIN_PIPE_GAP_SIZE = 25f;
   private const float CAMERA_SIZE = 50f;
   private const float SPEED = 30f;
@@ -16,7 +20,10 @@ public class LevelHandler : MonoBehaviour {
   private List<Pipe> pipes;
   private float pipeGapSize;
 
+  private List<Ground> grounds;
+
   private void Awake() {
+    grounds = new List<Ground>();
     pipes = new List<Pipe>();
     pipeSpawnTimerMax = 1.5f;
     pipesSpawned = 0;
@@ -25,8 +32,37 @@ public class LevelHandler : MonoBehaviour {
 
   private void FixedUpdate() {
     if (!GameHandler.getInstance().isGamePaused) {
-      HandlePipeMovement();
       HandlePipeSpawning();
+      HandlePipeMovement();
+    }
+
+    if (!GameHandler.getInstance().isGameOver) {
+      HandleGroundSpawning();
+      HandleGroundMovement();
+    }
+  }
+
+  private void HandleGroundSpawning() {
+    int length = grounds.Count;
+
+    if (length < 1) {
+      SpawnGround();
+    } else if (grounds[length - 1].x <= CAMERA_SIZE * -1) {
+      SpawnGround(GROUND_SPAWN_X_POSITION);
+    }
+  }
+
+  private void HandleGroundMovement() {
+    for (int i = 0;i < grounds.Count;i++) {
+      Ground ground = grounds[i];
+
+      ground.move();
+
+      if (ground.x < GROUND_DESTROY_X_POSITION) {
+        ground.destroy();
+        grounds.Remove(ground);
+        i--;
+      }
     }
   }
 
@@ -34,10 +70,10 @@ public class LevelHandler : MonoBehaviour {
     for (int i = 0;i < pipes.Count;i++) {
       Pipe pipe = pipes[i];
 
-      pipe.Move();
+      pipe.move();
 
-      if (pipe.GetXPosition() < PIPE_DESTROY_X_POSITION) {
-        pipe.DestroySelf();
+      if (pipe.x < PIPE_DESTROY_X_POSITION) {
+        pipe.destroy();
         pipes.Remove(pipe);
         i--;
       }
@@ -50,13 +86,13 @@ public class LevelHandler : MonoBehaviour {
     if (pipeSpawnTimer <= 0) {
       pipeSpawnTimer = pipeSpawnTimerMax;
 
-      float totalHeight = CAMERA_SIZE * 2f;
-      float heightEdgeLimit = 5f;
-      float minHeight = pipeGapSize / 2f + heightEdgeLimit;
-      float maxHeight = totalHeight - pipeGapSize / 2f - heightEdgeLimit;
+      float totalHeight = CAMERA_SIZE * 2;
+      float heightEdgeLimit = 15;
+      float minHeight = pipeGapSize / 2 + heightEdgeLimit;
+      float maxHeight = totalHeight - pipeGapSize / 2 - heightEdgeLimit;
       float height = UnityEngine.Random.Range(minHeight, maxHeight);
 
-      Debug.Log("Min: " + minHeight + " Max: " + maxHeight + " Height: " + height);
+      //Debug.Log("Min: " + minHeight + " Max: " + maxHeight + " Height: " + height);
 
       CreateGapPipes(height, pipeGapSize, PIPE_SPAWN_X_POSITION);
       HandleDifficulty();
@@ -67,13 +103,15 @@ public class LevelHandler : MonoBehaviour {
     if (pipesSpawned % INCREASES_DIFFICULTY_EVERY == 0 && pipeGapSize >= MIN_PIPE_GAP_SIZE + PIPE_GAP_SIZE_DECREASES) {
       pipeGapSize -= PIPE_GAP_SIZE_DECREASES;
 
-      if (pipeSpawnTimerMax * .95f >= .8f) {
-        pipeSpawnTimerMax *= .95f;
+      float newSpawnTimer = pipeSpawnTimerMax * .95f;
+
+      if (newSpawnTimer >= .8f) {
+        pipeSpawnTimerMax = newSpawnTimer;
       } else {
         pipeSpawnTimerMax = .8f;
       }
 
-      Debug.Log("GapSize: " + pipeGapSize + " SpawnTimer: " + pipeSpawnTimerMax);
+      //Debug.Log("GapSize: " + pipeGapSize + " SpawnTimer: " + pipeSpawnTimerMax);
     }
   }
 
@@ -87,22 +125,25 @@ public class LevelHandler : MonoBehaviour {
     pipes.Add(new Pipe(height, xPosition, onGround));
   }
 
+  private void SpawnGround(float x = 50, float y = -45.5f) {
+    grounds.Add(new Ground(x, y));
+  }
+
   private class Pipe {
     private Transform pipeHead;
     private Transform pipeBody;
-    private bool isBottom;
 
     public Pipe(float height, float xPosition, bool isBottom = true) {
       float yPosition = CAMERA_SIZE * (isBottom ? -1 : 1);
 
       // Head
-      Transform pipeHead = Instantiate(GameAssets.GetInstance().pipeHead);
+      Transform pipeHead = Instantiate(GameAssets.getInstance().pipeHead);
       SpriteRenderer headRenderer = pipeHead.GetComponent<SpriteRenderer>();
       float headH = headRenderer.size.y;
       float headY = isBottom ? yPosition + height - (headH / 2f) : yPosition - height + (headH / 2f);
 
       // Body
-      Transform pipeBody = Instantiate(GameAssets.GetInstance().pipeBody);
+      Transform pipeBody = Instantiate(GameAssets.getInstance().pipeBody);
       SpriteRenderer bodyRenderer = pipeBody.GetComponent<SpriteRenderer>();
       BoxCollider2D bodyCollider = pipeBody.GetComponent<BoxCollider2D>();
       float bodyW = bodyRenderer.size.x;
@@ -121,21 +162,48 @@ public class LevelHandler : MonoBehaviour {
 
       this.pipeHead = pipeHead;
       this.pipeBody = pipeBody;
-      this.isBottom = isBottom;
     }
 
-    public void Move() {
+    public void move() {
       pipeHead.position += new Vector3(-1, 0, 0) * SPEED * Time.deltaTime;
       pipeBody.position += new Vector3(-1, 0, 0) * SPEED * Time.deltaTime;
     }
 
-    public float GetXPosition() {
-      return pipeHead.position.x;
+    public float x {
+      get {
+        return pipeHead.position.x;
+      }
     }
 
-    public void DestroySelf() {
+    public void destroy() {
       Destroy(pipeHead.gameObject);
       Destroy(pipeBody.gameObject);
+    }
+  }
+
+  private class Ground {
+    private Transform ground;
+
+    public Ground(float x = 50, float y = -45.5f) {
+      Transform ground = Instantiate(GameAssets.getInstance().ground);
+
+      ground.position = new Vector3(x, y, 0);
+
+      this.ground = ground;
+    }
+
+    public void move() {
+      ground.position += new Vector3(-1, 0, 0) * SPEED * Time.deltaTime;
+    }
+
+    public float x {
+      get {
+        return ground.position.x;
+      }
+    }
+
+    public void destroy() {
+      Destroy(ground.gameObject);
     }
   }
 }
