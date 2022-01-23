@@ -2,6 +2,12 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class LevelHandler : MonoBehaviour {
+  private static LevelHandler instance;
+
+  public static LevelHandler getInstance() {
+    return instance;
+  }
+
   private const float GROUND_DESTROY_X_POSITION = -250f;
   private const float GROUND_SPAWN_X_POSITION = 240f;
 
@@ -16,18 +22,19 @@ public class LevelHandler : MonoBehaviour {
 
   private float pipeSpawnTimerMax;
   private float pipeSpawnTimer;
-  private int pipesSpawned;
-  private List<Pipe> pipes;
   private float pipeGapSize;
+  private int pipesSpawned;
 
   private List<Ground> grounds;
+  private List<Pipe> pipes;
 
   private void Awake() {
     grounds = new List<Ground>();
     pipes = new List<Pipe>();
     pipeSpawnTimerMax = 1.5f;
-    pipesSpawned = 0;
     pipeGapSize = 50f;
+    pipesSpawned = 0;
+    instance = this;
   }
 
   private void FixedUpdate() {
@@ -66,20 +73,6 @@ public class LevelHandler : MonoBehaviour {
     }
   }
 
-  private void HandlePipeMovement() {
-    for (int i = 0;i < pipes.Count;i++) {
-      Pipe pipe = pipes[i];
-
-      pipe.move();
-
-      if (pipe.x < PIPE_DESTROY_X_POSITION) {
-        pipe.destroy();
-        pipes.Remove(pipe);
-        i--;
-      }
-    }
-  }
-
   private void HandlePipeSpawning() {
     pipeSpawnTimer -= Time.deltaTime;
 
@@ -99,6 +92,20 @@ public class LevelHandler : MonoBehaviour {
     }
   }
 
+  private void HandlePipeMovement() {
+    for (int i = 0;i < pipes.Count;i++) {
+      Pipe pipe = pipes[i];
+
+      pipe.move();
+
+      if (pipe.x < PIPE_DESTROY_X_POSITION) {
+        pipe.destroy();
+        pipes.Remove(pipe);
+        i--;
+      }
+    }
+  }
+
   private void HandleDifficulty() {
     if (pipesSpawned % INCREASES_DIFFICULTY_EVERY == 0 && pipeGapSize >= MIN_PIPE_GAP_SIZE + PIPE_GAP_SIZE_DECREASES) {
       pipeGapSize -= PIPE_GAP_SIZE_DECREASES;
@@ -110,8 +117,6 @@ public class LevelHandler : MonoBehaviour {
       } else {
         pipeSpawnTimerMax = .8f;
       }
-
-      //Debug.Log("GapSize: " + pipeGapSize + " SpawnTimer: " + pipeSpawnTimerMax);
     }
   }
 

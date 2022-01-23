@@ -14,4 +14,7 @@ public class GameAssets : MonoBehaviour {
   public Transform pipeHead;
   public Transform pipeBody;
   public Transform ground;
+  public Transform cloud1;
+  public Transform cloud2;
+  public Transform cloud3;
 }
