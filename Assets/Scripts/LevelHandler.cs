@@ -2,48 +2,55 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class LevelHandler : MonoBehaviour {
-  private static LevelHandler instance;
+  private const float GROUND_SPAWN_TEST_POSITION = -32;
+  private const float GROUND_DESTROY_X_POSITION = -224;
+  private const float GROUND_SPAWN_X_POSITION = 215;
 
-  public static LevelHandler getInstance() {
-    return instance;
-  }
+  private const float PIPE_DESTROY_X_POSITION = -100;
+  private const float PIPE_GAP_SIZE_DECREASES = 2;
+  private const float PIPE_GAP_DEFAULT_SIZE = 50;
+  private const float PIPE_SPAWN_X_POSITION = 100;
 
-  private const float GROUND_DESTROY_X_POSITION = -250f;
-  private const float GROUND_SPAWN_X_POSITION = 240f;
+  private const int INCREASES_DIFFICULTY_EVERY_X_PIPES = 5;
+  private const float MAX_PIPE_SPAWN_TIMER = 2;
+  private const float MIN_PIPE_SPAWN_TIMER = 1;
+  private const float MIN_PIPE_GAP_SIZE = 25;
+  private const float CAMERA_SIZE = 50;
+  private const float LEVEL_SPEED = 30;
 
-  private const float PIPE_DESTROY_X_POSITION = -100f;
-  private const float PIPE_GAP_SIZE_DECREASES = 2.5f;
-  private const float PIPE_SPAWN_X_POSITION = 100f;
-
-  private const int INCREASES_DIFFICULTY_EVERY = 5;
-  private const float MIN_PIPE_GAP_SIZE = 25f;
-  private const float CAMERA_SIZE = 50f;
-  private const float SPEED = 30f;
-
-  private float pipeSpawnTimerMax;
+  private float pipeNextSpawnTimer;
   private float pipeSpawnTimer;
   private float pipeGapSize;
   private int pipesSpawned;
 
+  private bool isGameStarted = false;
+  private bool isGamePaused = true;
+
   private List<Ground> grounds;
   private List<Pipe> pipes;
+
+  private void OnEnable() {
+    Actions.OnGameStart += OnGameStart;
+    Actions.OnGamePause += OnGamePause;
+  }
+
+  private void OnDisable() {
+    Actions.OnGameStart -= OnGameStart;
+    Actions.OnGamePause -= OnGamePause;
+  }
 
   private void Awake() {
     grounds = new List<Ground>();
     pipes = new List<Pipe>();
-    pipeSpawnTimerMax = 1.5f;
-    pipeGapSize = 50f;
-    pipesSpawned = 0;
-    instance = this;
   }
 
   private void FixedUpdate() {
-    if (!GameHandler.getInstance().isGamePaused) {
+    if (!isGamePaused) {
       HandlePipeSpawning();
       HandlePipeMovement();
     }
 
-    if (!GameHandler.getInstance().isGameOver) {
+    if (!isGameStarted || (isGameStarted && !isGamePaused)) {
       HandleGroundSpawning();
       HandleGroundMovement();
     }
@@ -52,21 +59,23 @@ public class LevelHandler : MonoBehaviour {
   private void HandleGroundSpawning() {
     int length = grounds.Count;
 
+    if (length >= 2) return;
+
     if (length < 1) {
       SpawnGround();
-    } else if (grounds[length - 1].x <= CAMERA_SIZE * -1) {
+    } else if (grounds[length - 1].x <= GROUND_SPAWN_TEST_POSITION) {
       SpawnGround(GROUND_SPAWN_X_POSITION);
     }
   }
 
   private void HandleGroundMovement() {
-    for (int i = 0;i < grounds.Count;i++) {
+    for (int i = 0; i < grounds.Count; i++) {
       Ground ground = grounds[i];
 
-      ground.move();
+      ground.Move(LEVEL_SPEED);
 
-      if (ground.x < GROUND_DESTROY_X_POSITION) {
-        ground.destroy();
+      if (ground.x <= GROUND_DESTROY_X_POSITION) {
+        ground.Destroy();
         grounds.Remove(ground);
         i--;
       }
@@ -77,15 +86,13 @@ public class LevelHandler : MonoBehaviour {
     pipeSpawnTimer -= Time.deltaTime;
 
     if (pipeSpawnTimer <= 0) {
-      pipeSpawnTimer = pipeSpawnTimerMax;
+      pipeSpawnTimer = pipeNextSpawnTimer;
 
       float totalHeight = CAMERA_SIZE * 2;
       float heightEdgeLimit = 15;
-      float minHeight = pipeGapSize / 2 + heightEdgeLimit;
-      float maxHeight = totalHeight - pipeGapSize / 2 - heightEdgeLimit;
+      float minHeight = pipeGapSize * .5f + heightEdgeLimit;
+      float maxHeight = totalHeight - pipeGapSize * .5f - heightEdgeLimit;
       float height = UnityEngine.Random.Range(minHeight, maxHeight);
-
-      //Debug.Log("Min: " + minHeight + " Max: " + maxHeight + " Height: " + height);
 
       CreateGapPipes(height, pipeGapSize, PIPE_SPAWN_X_POSITION);
       HandleDifficulty();
@@ -93,13 +100,13 @@ public class LevelHandler : MonoBehaviour {
   }
 
   private void HandlePipeMovement() {
-    for (int i = 0;i < pipes.Count;i++) {
+    for (int i = 0; i < pipes.Count; i++) {
       Pipe pipe = pipes[i];
 
-      pipe.move();
+      pipe.Move(LEVEL_SPEED);
 
-      if (pipe.x < PIPE_DESTROY_X_POSITION) {
-        pipe.destroy();
+      if (pipe.x <= PIPE_DESTROY_X_POSITION) {
+        pipe.Destroy();
         pipes.Remove(pipe);
         i--;
       }
@@ -107,22 +114,24 @@ public class LevelHandler : MonoBehaviour {
   }
 
   private void HandleDifficulty() {
-    if (pipesSpawned % INCREASES_DIFFICULTY_EVERY == 0 && pipeGapSize >= MIN_PIPE_GAP_SIZE + PIPE_GAP_SIZE_DECREASES) {
+    if (pipesSpawned % INCREASES_DIFFICULTY_EVERY_X_PIPES == 0 && pipeGapSize >= MIN_PIPE_GAP_SIZE + PIPE_GAP_SIZE_DECREASES) {
       pipeGapSize -= PIPE_GAP_SIZE_DECREASES;
 
-      float newSpawnTimer = pipeSpawnTimerMax * .95f;
+      float newSpawnTimer = pipeNextSpawnTimer * .95f;
 
-      if (newSpawnTimer >= .8f) {
-        pipeSpawnTimerMax = newSpawnTimer;
+      if (newSpawnTimer >= MIN_PIPE_SPAWN_TIMER) {
+        pipeNextSpawnTimer = newSpawnTimer;
       } else {
-        pipeSpawnTimerMax = .8f;
+        pipeNextSpawnTimer = MIN_PIPE_SPAWN_TIMER;
       }
+
+      Debug.Log("Gap: " + pipeGapSize + " Speed: " + LEVEL_SPEED + "\nSpawn Timer: " + pipeNextSpawnTimer);
     }
   }
 
   private void CreateGapPipes(float gapY, float gapSize, float xPosition) {
-    CreatePipe(CAMERA_SIZE * 2f - gapY - gapSize / 2f, xPosition, false);
-    CreatePipe(gapY - gapSize / 2f, xPosition);
+    CreatePipe((CAMERA_SIZE * 2f) - gapY - (gapSize * .5f), xPosition, false);
+    CreatePipe(gapY - (gapSize * .5f), xPosition);
     pipesSpawned++;
   }
 
@@ -130,8 +139,37 @@ public class LevelHandler : MonoBehaviour {
     pipes.Add(new Pipe(height, xPosition, onGround));
   }
 
-  private void SpawnGround(float x = 50, float y = -45.5f) {
+  private void SpawnGround(float x = 40, float y = -45f) {
     grounds.Add(new Ground(x, y));
+  }
+
+  private void OnGameStart() {
+    DestroyPipes();
+
+    pipes = new List<Pipe>();
+
+    pipeNextSpawnTimer = MAX_PIPE_SPAWN_TIMER;
+    pipeGapSize = PIPE_GAP_DEFAULT_SIZE;
+    isGameStarted = true;
+    pipesSpawned = 0;
+  }
+
+  private void OnGamePause(bool isPaused) {
+    isGamePaused = isPaused;
+  }
+
+  private void DestroyPipes() {
+    int i = pipes.Count - 1;
+
+    while (i >= 0) {
+      Pipe pipe = pipes[i];
+
+      pipe.Destroy();
+      pipes.Remove(pipe);
+
+      i--;
+
+    }
   }
 
   private class Pipe {
@@ -142,13 +180,13 @@ public class LevelHandler : MonoBehaviour {
       float yPosition = CAMERA_SIZE * (isBottom ? -1 : 1);
 
       // Head
-      Transform pipeHead = Instantiate(GameAssets.getInstance().pipeHead);
+      Transform pipeHead = Instantiate(GameAssets.Instance.PipeHead);
       SpriteRenderer headRenderer = pipeHead.GetComponent<SpriteRenderer>();
       float headH = headRenderer.size.y;
-      float headY = isBottom ? yPosition + height - (headH / 2f) : yPosition - height + (headH / 2f);
+      float headY = isBottom ? yPosition + height - (headH * .5f) : yPosition - height + (headH * .5f);
 
       // Body
-      Transform pipeBody = Instantiate(GameAssets.getInstance().pipeBody);
+      Transform pipeBody = Instantiate(GameAssets.Instance.PipeBody);
       SpriteRenderer bodyRenderer = pipeBody.GetComponent<SpriteRenderer>();
       BoxCollider2D bodyCollider = pipeBody.GetComponent<BoxCollider2D>();
       float bodyW = bodyRenderer.size.x;
@@ -163,15 +201,15 @@ public class LevelHandler : MonoBehaviour {
 
       bodyRenderer.size = new Vector2(bodyW, height);
       bodyCollider.size = new Vector2(bodyW, height);
-      bodyCollider.offset = new Vector2(0, height / 2f);
+      bodyCollider.offset = new Vector2(0, height * .5f);
 
       this.pipeHead = pipeHead;
       this.pipeBody = pipeBody;
     }
 
-    public void move() {
-      pipeHead.position += new Vector3(-1, 0, 0) * SPEED * Time.deltaTime;
-      pipeBody.position += new Vector3(-1, 0, 0) * SPEED * Time.deltaTime;
+    public void Move(float speed) {
+      pipeHead.position += new Vector3(-1, 0, 0) * speed * Time.deltaTime;
+      pipeBody.position += new Vector3(-1, 0, 0) * speed * Time.deltaTime;
     }
 
     public float x {
@@ -180,9 +218,9 @@ public class LevelHandler : MonoBehaviour {
       }
     }
 
-    public void destroy() {
-      Destroy(pipeHead.gameObject);
-      Destroy(pipeBody.gameObject);
+    public void Destroy() {
+      Object.Destroy(pipeHead.gameObject);
+      Object.Destroy(pipeBody.gameObject);
     }
   }
 
@@ -190,15 +228,15 @@ public class LevelHandler : MonoBehaviour {
     private Transform ground;
 
     public Ground(float x = 50, float y = -45.5f) {
-      Transform ground = Instantiate(GameAssets.getInstance().ground);
+      Transform ground = Instantiate(GameAssets.Instance.Ground);
 
       ground.position = new Vector3(x, y, 0);
 
       this.ground = ground;
     }
 
-    public void move() {
-      ground.position += new Vector3(-1, 0, 0) * SPEED * Time.deltaTime;
+    public void Move(float speed) {
+      ground.position += speed * Time.deltaTime * new Vector3(-1, 0, 0);
     }
 
     public float x {
@@ -207,8 +245,8 @@ public class LevelHandler : MonoBehaviour {
       }
     }
 
-    public void destroy() {
-      Destroy(ground.gameObject);
+    public void Destroy() {
+      Object.Destroy(ground.gameObject);
     }
   }
 }

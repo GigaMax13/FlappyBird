@@ -1,54 +1,76 @@
 using UnityEngine;
 
 public class GameHandler : MonoBehaviour {
-  private static GameHandler instance;
+  private bool isGameStarted = false;
+  private bool isGamePaused = true;
+  private bool isGameOver = false;
+  private int playerScore = 0;
+  private int hightScore = 0;
+  private bool isSpacePressed = false;
+  private bool isScapePressed = false;
 
-  public static GameHandler getInstance() {
-    return instance;
+  private void OnEnable() {
+    Actions.OnPlayerScore += UpdatePlayerScore;
+    Actions.OnGameOver += OnGameOver;
   }
 
-  private bool isPaused = true;
-  private bool isOver = false;
-
-  private void Awake() {
-    instance = this;
+  private void OnDisable() {
+    Actions.OnPlayerScore -= UpdatePlayerScore;
+    Actions.OnGameOver -= OnGameOver;
   }
 
   private void Update() {
-    if (Input.GetKeyDown(KeyCode.Space) || Input.GetMouseButtonDown(0)) {
-      if (isGamePaused) {
-        // Start
-        if (!isGameOver) {
-          tooglePause();
-        }
-        // Restart
-        else {
+    isSpacePressed = (Input.GetKeyDown(KeyCode.Space) || Input.GetMouseButtonDown(0));
+    isScapePressed = Input.GetKeyDown(KeyCode.Escape);
 
-        }
+    if (!isGameStarted && isSpacePressed) {
+      OnGameStart();
+    }
+
+    if (isGameStarted && !isGameOver) {
+      if (!isGamePaused && isScapePressed) {
+        ToggleGamePause();
+      }
+
+      if (isGamePaused && isSpacePressed) {
+        ToggleGamePause();
       }
     }
-  }
 
-  public void gameOver() {
-    isPaused = true;
-    isOver = true;
-  }
-
-  public void tooglePause() {
-    if (!isGameOver) {
-      isPaused = !isPaused;
+    if (isGameOver && isSpacePressed) {
+      OnGameStart();
     }
   }
 
-  public bool isGameOver {
-    get {
-      return isOver;
-    }
+  private void UpdatePlayerScore(int newScore) {
+    playerScore = newScore;
   }
 
-  public bool isGamePaused {
-    get {
-      return isPaused;
+  private void OnGameStart() {
+    isGameStarted = true;
+    isGameOver = false;
+    Actions.OnGameStart();
+    Actions.OnPlayerScore(0);
+    SetGamePause(false);
+  }
+
+  private void OnGameOver() {
+    if (playerScore > hightScore) {
+      hightScore = playerScore;
     }
+
+    isGameStarted = false;
+    isGameOver = true;
+    SetGamePause(true);
+  }
+
+  private void SetGamePause(bool pauseValue) {
+    isGamePaused = pauseValue;
+    Actions.OnGamePause(isGamePaused);
+  }
+
+  private void ToggleGamePause() {
+    isGamePaused = !isGamePaused;
+    Actions.OnGamePause(isGamePaused);
   }
 }

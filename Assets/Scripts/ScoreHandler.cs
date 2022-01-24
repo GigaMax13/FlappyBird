@@ -1,27 +1,41 @@
 using UnityEngine;
 
 public class ScoreHandler : MonoBehaviour {
-  private static ScoreHandler instance;
-
-  public static ScoreHandler getInstance() {
-    return instance;
-  }
-
-  private int playserScore;
+  private int lastEmittedEvent;
+  private float pipesColisions;
 
   private void Awake() {
-    playserScore = 0;
-    instance = this;
+    lastEmittedEvent = 0;
+    pipesColisions = 0;
+  }
+
+  private void OnEnable() {
+    Actions.OnGameStart += OnGameStart;
+  }
+
+  private void OnDisable() {
+    Actions.OnGameStart -= OnGameStart;
+  }
+
+  private void FixedUpdate() {
+    if (score != lastEmittedEvent) {
+      lastEmittedEvent = score;
+      Actions.OnPlayerScore(lastEmittedEvent);
+    }
   }
 
   private void OnTriggerEnter2D(Collider2D collider) {
-    Debug.Log("Colision! " + collider.name);
-    playserScore++;
+    pipesColisions++;
   }
 
-  public int score {
+  private void OnGameStart() {
+    lastEmittedEvent = 0;
+    pipesColisions = 0;
+  }
+
+  private int score {
     get {
-      return playserScore / 4;
+      return Mathf.FloorToInt(pipesColisions * .25f);
     }
   }
 }

@@ -7,7 +7,26 @@ public class ScoreText : MonoBehaviour {
   private void Awake() {
     scoreText = GetComponent<TextMeshProUGUI>();
   }
-  void Update() {
-    scoreText.text = ScoreHandler.getInstance().score.ToString();
+
+  private void OnEnable() {
+    scoreText.enabled = false;
+    Actions.OnGameStart += showPlayerScore;
+    Actions.OnPlayerScore += updatePlayerScore;
+  }
+
+  private void OnDisable() {
+    Actions.OnGameStart -= showPlayerScore;
+    Actions.OnPlayerScore -= updatePlayerScore;
+  }
+
+  private void showPlayerScore() {
+    scoreText.enabled = true;
+    updatePlayerScore(0);
+  }
+
+  private void updatePlayerScore(int score) {
+    if (scoreText.enabled) {
+      scoreText.text = "Score\n" + score.ToString();
+    }
   }
 }
