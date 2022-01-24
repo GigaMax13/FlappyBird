@@ -41,6 +41,9 @@ TagManager:
   - name: background
     uniqueID: 923536643
     locked: 0
+  - name: cloud
+    uniqueID: 1076754205
+    locked: 0
   - name: pipe
     uniqueID: 3370072721
     locked: 0

@@ -2,14 +2,15 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class LevelHandler : MonoBehaviour {
-  private const float GROUND_SPAWN_TEST_POSITION = -32;
-  private const float GROUND_DESTROY_X_POSITION = -224;
-  private const float GROUND_SPAWN_X_POSITION = 215;
+  private const float GROUND_SPAWN_X_POSITION = 320;
+
+  private const float CLOUD_DESTROY_X_POSITION = -150;
+  private const float CLOUD_SPAWN_X_POSITION = 150;
 
   private const float PIPE_DESTROY_X_POSITION = -100;
   private const float PIPE_GAP_SIZE_DECREASES = 2;
-  private const float PIPE_GAP_DEFAULT_SIZE = 50;
   private const float PIPE_SPAWN_X_POSITION = 100;
+  private const float PIPE_GAP_DEFAULT_SIZE = 50;
 
   private const int INCREASES_DIFFICULTY_EVERY_X_PIPES = 5;
   private const float MAX_PIPE_SPAWN_TIMER = 2;
@@ -27,6 +28,7 @@ public class LevelHandler : MonoBehaviour {
   private bool isGamePaused = true;
 
   private List<Ground> grounds;
+  private List<Cloud> clouds;
   private List<Pipe> pipes;
 
   private void OnEnable() {
@@ -41,7 +43,12 @@ public class LevelHandler : MonoBehaviour {
 
   private void Awake() {
     grounds = new List<Ground>();
+    clouds = new List<Cloud>();
     pipes = new List<Pipe>();
+  }
+
+  private void Start() {
+    HandleGroundSpawning();
   }
 
   private void FixedUpdate() {
@@ -51,21 +58,15 @@ public class LevelHandler : MonoBehaviour {
     }
 
     if (!isGameStarted || (isGameStarted && !isGamePaused)) {
-      HandleGroundSpawning();
       HandleGroundMovement();
+      HandleCloudSpawning();
+      HandleCloudMovement();
     }
   }
 
   private void HandleGroundSpawning() {
-    int length = grounds.Count;
-
-    if (length >= 2) return;
-
-    if (length < 1) {
-      SpawnGround();
-    } else if (grounds[length - 1].x <= GROUND_SPAWN_TEST_POSITION) {
-      SpawnGround(GROUND_SPAWN_X_POSITION);
-    }
+    SpawnGround();
+    SpawnGround(GROUND_SPAWN_X_POSITION);
   }
 
   private void HandleGroundMovement() {
@@ -74,9 +75,31 @@ public class LevelHandler : MonoBehaviour {
 
       ground.Move(LEVEL_SPEED);
 
-      if (ground.x <= GROUND_DESTROY_X_POSITION) {
-        ground.Destroy();
-        grounds.Remove(ground);
+      if (ground.x <= GROUND_SPAWN_X_POSITION * -.5f) {
+        ground.x = GROUND_SPAWN_X_POSITION;
+      }
+    }
+  }
+
+  private void HandleCloudSpawning() {
+    float threshold = Random.Range(0f, 50f);
+    int length = clouds.Count;
+
+    if (length == 0 || clouds[length - 1].x <= threshold) {
+      float y = Random.Range(0f, 50f);
+      clouds.Add(new Cloud(CLOUD_SPAWN_X_POSITION, y));
+    }
+  }
+
+  private void HandleCloudMovement() {
+    for (int i = 0; i < clouds.Count; i++) {
+      Cloud cloud = clouds[i];
+
+      cloud.Move(LEVEL_SPEED);
+
+      if (cloud.x <= CLOUD_DESTROY_X_POSITION) {
+        cloud.Destroy();
+        clouds.Remove(cloud);
         i--;
       }
     }
@@ -92,7 +115,7 @@ public class LevelHandler : MonoBehaviour {
       float heightEdgeLimit = 15;
       float minHeight = pipeGapSize * .5f + heightEdgeLimit;
       float maxHeight = totalHeight - pipeGapSize * .5f - heightEdgeLimit;
-      float height = UnityEngine.Random.Range(minHeight, maxHeight);
+      float height = Random.Range(minHeight, maxHeight);
 
       CreateGapPipes(height, pipeGapSize, PIPE_SPAWN_X_POSITION);
       HandleDifficulty();
@@ -139,8 +162,8 @@ public class LevelHandler : MonoBehaviour {
     pipes.Add(new Pipe(height, xPosition, onGround));
   }
 
-  private void SpawnGround(float x = 40, float y = -45f) {
-    grounds.Add(new Ground(x, y));
+  private void SpawnGround(float x = 40) {
+    grounds.Add(new Ground(x));
   }
 
   private void OnGameStart() {
@@ -169,6 +192,48 @@ public class LevelHandler : MonoBehaviour {
 
       i--;
 
+    }
+  }
+
+  private class Ground {
+    private const float GROUND_Y_POSITION = -45;
+    private Transform ground;
+
+    public Ground(float x = 50) {
+      ground = Instantiate(GameAssets.Instance.Ground, new Vector3(x, GROUND_Y_POSITION, 0), Quaternion.identity);
+    }
+
+    public void Move(float speed) {
+      ground.position += speed * Time.deltaTime * new Vector3(-1, 0, 0);
+    }
+
+    public float x {
+      set => ground.position = new Vector3(value, GROUND_Y_POSITION, 0);
+      get => ground.position.x;
+    }
+  }
+
+  private class Cloud {
+    private const float CLOUD_SPEED = .2f;
+    private Transform cloud;
+
+    public Cloud(float x = 0, float y = 0) {
+      int index = Random.Range(0, 100) % GameAssets.Instance.Cloud.Count;
+      cloud = Instantiate(GameAssets.Instance.Cloud[index], new Vector3(x, y, 0), Quaternion.identity);
+    }
+
+    public void Move(float speed) {
+      cloud.position += speed * CLOUD_SPEED * Time.deltaTime * new Vector3(-1, 0, 0);
+    }
+
+    public float x {
+      get {
+        return cloud.position.x;
+      }
+    }
+
+    public void Destroy() {
+      Object.Destroy(cloud.gameObject);
     }
   }
 
@@ -221,32 +286,6 @@ public class LevelHandler : MonoBehaviour {
     public void Destroy() {
       Object.Destroy(pipeHead.gameObject);
       Object.Destroy(pipeBody.gameObject);
-    }
-  }
-
-  private class Ground {
-    private Transform ground;
-
-    public Ground(float x = 50, float y = -45.5f) {
-      Transform ground = Instantiate(GameAssets.Instance.Ground);
-
-      ground.position = new Vector3(x, y, 0);
-
-      this.ground = ground;
-    }
-
-    public void Move(float speed) {
-      ground.position += speed * Time.deltaTime * new Vector3(-1, 0, 0);
-    }
-
-    public float x {
-      get {
-        return ground.position.x;
-      }
-    }
-
-    public void Destroy() {
-      Object.Destroy(ground.gameObject);
     }
   }
 }
