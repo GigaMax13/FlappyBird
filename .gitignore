@@ -30,6 +30,9 @@
 # VS Code
 .vscode/
 
+# Zip Files
+*.zip
+
 # Mac OS
 .DS_Store
 

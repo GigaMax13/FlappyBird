@@ -236,7 +236,7 @@ GameObject:
   - component: {fileID: 466188078}
   - component: {fileID: 466188079}
   m_Layer: 0
-  m_Name: GameAssets
+  m_Name: AssetsManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -275,6 +275,13 @@ MonoBehaviour:
   cloud1: {fileID: 3894038573187201400, guid: d38930653a6c741ce89afd0514a1e37b, type: 3}
   cloud2: {fileID: 2644032193157145438, guid: 251a6ff9cd72b43dba83e05f237e6409, type: 3}
   cloud3: {fileID: 4386025319772682208, guid: a646e7716d1fc4916837708092ea3971, type: 3}
+  sounds:
+  - sound: 0
+    audioClip: {fileID: 8300000, guid: 3c75c0bd203a54be095c9f54e96c12e7, type: 3}
+  - sound: 1
+    audioClip: {fileID: 8300000, guid: 02d2cd9c75eb241f29481f76ad68e4a0, type: 3}
+  - sound: 2
+    audioClip: {fileID: 8300000, guid: bd171b22a3d494f14a952c5f94def811, type: 3}
 --- !u!1 &519420028
 GameObject:
   m_ObjectHideFlags: 0
@@ -972,7 +979,7 @@ GameObject:
   - component: {fileID: 986964735}
   - component: {fileID: 986964734}
   m_Layer: 0
-  m_Name: ScoreHandler
+  m_Name: ScoreManager
   m_TagString: Untagged
   m_Icon: {fileID: -964228994112308473, guid: 0000000000000000d000000000000000, type: 0}
   m_NavMeshLayer: 0
@@ -1079,7 +1086,7 @@ GameObject:
   - component: {fileID: 1435011585}
   - component: {fileID: 1435011584}
   m_Layer: 0
-  m_Name: GameHandler
+  m_Name: GameManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1249,7 +1256,7 @@ GameObject:
   - component: {fileID: 1763086775}
   - component: {fileID: 1763086776}
   m_Layer: 13
-  m_Name: LevelHandler
+  m_Name: LevelManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
