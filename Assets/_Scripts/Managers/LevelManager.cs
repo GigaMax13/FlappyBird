@@ -147,8 +147,6 @@ public class LevelManager : MonoBehaviour {
       } else {
         pipeNextSpawnTimer = MIN_PIPE_SPAWN_TIMER;
       }
-
-      //Debug.Log("Gap: " + pipeGapSize + " Speed: " + LEVEL_SPEED + "\nSpawn Timer: " + pipeNextSpawnTimer);
     }
   }
 

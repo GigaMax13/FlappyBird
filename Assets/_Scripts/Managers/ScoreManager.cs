@@ -18,7 +18,7 @@ public class ScoreManager : MonoBehaviour {
   }
 
   private void FixedUpdate() {
-    if (score != lastEmittedEvent) {
+    if (lastEmittedEvent != score) {
       lastEmittedEvent = score;
 
       if (lastEmittedEvent > 0) {
@@ -40,7 +40,8 @@ public class ScoreManager : MonoBehaviour {
 
   private int score {
     get {
-      return Mathf.FloorToInt(pipesColisions * .25f);
+      int score = Mathf.FloorToInt(pipesColisions * .25f);
+      return score;
     }
   }
 }

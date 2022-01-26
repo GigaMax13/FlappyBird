@@ -64,7 +64,6 @@ public class Bird : MonoBehaviour {
   private void OnTriggerEnter2D(Collider2D collider) {
     SoundManager.PlaySound(AssetsManager.Sound.Die, .5f);
     Actions.OnGameOver();
-    //Debug.Log("Colision with: " + collider);
   }
 
   private void ChangeAnimationState(string newAnimation) {

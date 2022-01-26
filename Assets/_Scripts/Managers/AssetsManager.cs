@@ -59,7 +59,6 @@ public class AssetsManager : MonoBehaviour {
       }
     }
 
-    Debug.LogError("Sound not found: " + sound);
     return null;
   }
 
